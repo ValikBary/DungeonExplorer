@@ -2,6 +2,7 @@
 using System.Media;
 using System.Linq;
 
+
 namespace DungeonExplorer
 {
     internal class Game
@@ -9,7 +10,7 @@ namespace DungeonExplorer
         private Player player;
         private Room currentRoom;
 
-        
+
         public Game()
         {
             // Initialize the game with one room and one player
@@ -20,8 +21,19 @@ namespace DungeonExplorer
 
                 // Ask for player name and create player
                 Console.WriteLine("Welcome to Dungeon Explorer!");
-                Console.Write("Enter your character's name: ");
-                string playerName = Console.ReadLine();
+
+                // Name validation loop
+                string playerName;
+                do
+                {
+                    Console.Write("Enter your character's name: ");
+                    playerName = Console.ReadLine().Trim();
+
+                    if (string.IsNullOrWhiteSpace(playerName))
+                    {
+                        Console.WriteLine("Name cannot be empty. Please enter a valid name.");
+                    }
+                } while (string.IsNullOrWhiteSpace(playerName));
 
                 // Create player with initial health of 100
                 player = new Player(playerName, 100);
@@ -30,7 +42,7 @@ namespace DungeonExplorer
             catch (Exception ex)
             {
                 Console.WriteLine($"Error initializing game: {ex.Message}");
-                
+
             }
         }
 
@@ -39,7 +51,7 @@ namespace DungeonExplorer
             // Set playing to true to start the game loop
             bool playing = true;
 
-            
+
             Console.WriteLine(currentRoom.GetFullDescription());
 
             while (playing)
@@ -60,7 +72,7 @@ namespace DungeonExplorer
                     if (!validCommands.Contains(command))
                     {
                         Console.WriteLine($"Invalid input: '{input}'. Please try again with a valid command.");
-                        continue; 
+                        continue;
                     }
 
                     // Process valid commands
