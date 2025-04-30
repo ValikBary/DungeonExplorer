@@ -1,28 +1,39 @@
-﻿namespace DungeonExplorer
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace DungeonExplorer
 {
     public class Room
     {
-        
+
         private string description;
-
-        private string item;
-
-        private bool itemTaken;
-
-        // Constructor to initialize a room with a description
-        public Room(string description)
+        private List<Item> items = new List<Item>();
+        private Dictionary<string, bool> itemsTaken = new Dictionary<string, bool>();
+        private Monster monster;
+        private Dictionary<string, string> connections = new Dictionary<string, string>();
+    public Room(string description)
         {
             this.description = description;
-            this.item = null;
-            this.itemTaken = false;
+
         }
 
-        // Constructor to initialize a room with a description and an item
-        public Room(string description, string item)
+        // Add a monster to the room
+        public void AddMonster(Monster monster)
         {
-            this.description = description;
-            this.item = item;
-            this.itemTaken = false;
+            this.monster = monster;
+        }
+
+        // Check if the room has a monster that's alive
+        public bool HasMonster()
+        {
+            return monster != null && monster.IsAlive();
+        }
+
+        // Get the monster in the room
+        public Monster GetMonster()
+        {
+            return monster;
         }
 
         // Returns the description of the room
@@ -32,66 +43,123 @@
         }
 
         // Adds an item to the room
-        public void AddItem(string newItem)
+        public void AddItem(Item newItem)
         {
-            try
+            if (newItem == null)
             {
-                if (string.IsNullOrEmpty(newItem))
-                {
-                    throw new System.ArgumentException("Cannot add an empty item to the room.");
-                }
+                throw new ArgumentNullException(nameof(newItem), "Cannot add a null item to the room.");
+            }
 
-                this.item = newItem;
-                this.itemTaken = false;
-            }
-            catch (System.ArgumentException ex)
-            {
-                // Re-throw the exception to be handled by the calling method
-                throw ex;
-            }
+            items.Add(newItem);
+            itemsTaken[newItem.Name] = false;
         }
 
-        // Checks if the room has an item that hasn't been taken
-        public bool HasItem()
+        // Checks if the room has a specific item that hasn't been taken
+        public bool HasItem(string itemName)
         {
-            return item != null && !itemTaken;
+            return items.Any(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase) &&
+                         !itemsTaken.ContainsKey(itemName) || !itemsTaken[itemName]);
         }
 
-        // Returns the item in the room if it exists and hasn't been taken
-        public string GetItem()
+        // Checks if the room has any items that haven't been taken
+        public bool HasItems()
         {
-            return HasItem() ? item : null;
+            return items.Any(i => !itemsTaken.ContainsKey(i.Name) || !itemsTaken[i.Name]);
         }
 
-        // Takes the item from the room if possible
-        public string TakeItem()
+        // Returns all items in the room that haven't been taken
+        public List<Item> GetItems()
         {
-            try
+            return items.Where(i => !itemsTaken.ContainsKey(i.Name) || !itemsTaken[i.Name]).ToList();
+        }
+
+        // Takes a specific item from the room if possible
+        public Item TakeItem(string itemName)
+        {
+            Item item = items.FirstOrDefault(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+
+            if (item == null)
             {
-                if (!HasItem())
-                {
-                    throw new System.InvalidOperationException("There is no item to take in this room.");
-                }
-
-                itemTaken = true;
-                return item;
+                throw new InvalidOperationException($"There is no {itemName} in this room.");
             }
-            catch (System.InvalidOperationException ex)
+
+            if (itemsTaken.ContainsKey(item.Name) && itemsTaken[item.Name])
             {
-                // Log the error (in a real application)
-                System.Console.WriteLine(ex.Message);
+                throw new InvalidOperationException($"The {itemName} has already been taken.");
+            }
+
+            itemsTaken[item.Name] = true;
+            return item;
+        }
+
+        // Add a connection to another room
+        public void AddConnection(string direction, string roomId)
+        {
+            connections[direction.ToLower()] = roomId;
+        }
+
+        // Check if the room is connected to another room in the specified direction
+        public bool HasExit(string direction)
+        {
+            return connections.ContainsKey(direction.ToLower());
+        }
+
+        // Get the ID of the connected room in the specified direction
+        public string GetConnection(string direction)
+        {
+            if (!HasExit(direction))
+            {
                 return null;
             }
+
+            return connections[direction.ToLower()];
         }
 
-        // Gets the full description of the room, including any items
+        // Get a list of all available directions from this room
+        public List<string> GetConnections()
+        {
+            return connections.Keys.ToList();
+        }
+
+        // Check if this room is connected to a specific room ID
+        public bool IsConnectedTo(string roomId)
+        {
+            return connections.Values.Contains(roomId);
+        }
+
+        // Gets the full description of the room, including monsters and items
         public string GetFullDescription()
         {
-            if (HasItem())
+            string result = description;
+
+            // Add monster description if there is one
+            if (HasMonster())
             {
-                return $"{description}\nYou see a {item} here.";
+                result += $"\n{monster.GetDescription()}";
             }
-            return description;
+
+            // Add item descriptions
+            var availableItems = GetItems();
+            if (availableItems.Count > 0)
+            {
+                result += "\nYou see the following items:";
+                foreach (var item in availableItems)
+                {
+                    result += $"\n- {item.Name}: {item.Description}";
+                }
+            }
+
+            // Add available exits
+            if (connections.Count > 0)
+            {
+                result += "\n\nDirections:";
+                foreach (var exit in connections)
+                {
+                    result += $"\n- {exit.Key}";
+                }
+            }
+
+            return result;
         }
     }
 }

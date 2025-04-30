@@ -1,75 +1,70 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DungeonExplorer
 {
-    public class Player
+    public class Player : Creature
     {
-        
-        public string Name { get; private set; }
-
       
-        public int Health { get; private set; }
+        private List<Item> inventory = new List<Item>();
 
-        // Private collection to store player's inventory items
-        private List<string> inventory = new List<string>();
-
-        // Constructor for creating a new Player with a name and initial health
-        public Player(string name, int health)
+        // Constructor that calls the base class constructor
+        public Player(string name, int health) : base(name, health, 10) // Default attack power of 10
         {
-            Name = name;
-            Health = health;
+
         }
 
         // Adds an item to the player's inventory
-        public void PickUpItem(string item)
+        public void PickUpItem(Item item)
         {
-            if (string.IsNullOrEmpty(item))
+            if (item == null)
             {
-                throw new System.ArgumentException("Cannot pick up an empty item.");
+                throw new ArgumentNullException(nameof(item), "Cannot pick up a null item.");
             }
 
             inventory.Add(item);
         }
 
+        public List<Item> FindItemsByName(string searchTerm)
+        {
+            return inventory.Where(item => item.Name.ToLower().Contains(searchTerm.ToLower())).ToList();
+        }
+
+        public void IncreaseAttackPower(int amount)
+        {
+            AttackPower += amount;
+        }
+
+        // Legacy method to maintain compatibility
+
+        public void PickUpItem(string itemName)
+        {
+            if (string.IsNullOrEmpty(itemName))
+            {
+                throw new ArgumentException("Cannot pick up an empty item.");
+            }
+            // Create a simple item as a placeholder
+            Item placeholderItem = new Item(itemName, "A found item");
+            inventory.Add(placeholderItem);
+        }
+
         // Checks if the player has a specific item in their inventory
-        public bool HasItem(string item)
+        public bool HasItem(string itemName)
         {
-            return inventory.Contains(item);
+            return inventory.Any(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Reduces the player's health by the specified amount
-        public void TakeDamage(int amount)
+        // Get an item from inventory by name
+        public Item GetItem(string itemName)
         {
-            if (amount < 0)
-            {
-                throw new System.ArgumentException("Damage amount cannot be negative.");
-            }
-
-            Health = System.Math.Max(0, Health - amount); // Prevent negative health
-        }
-
-        // Increases the player's health by the specified amount
-        public void Heal(int amount)
-        {
-            if (amount < 0)
-            {
-                throw new System.ArgumentException("Healing amount cannot be negative.");
-            }
-
-            Health += amount;
-        }
-
-        // Checks if the player is still alive
-        public bool IsAlive()
-        {
-            return Health > 0;
+            return inventory.FirstOrDefault(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
         }
 
         // Returns a formatted string containing player's current status
         public string GetStatus()
         {
-            string status = $"Name: {Name}\nHealth: {Health}\nInventory: ";
-
+            string status = $"Name: {Name}\nHealth: {Health}\nAttack Power: {AttackPower}\nInventory: ";
             if (inventory.Count > 0)
             {
                 status += InventoryContents();
@@ -85,7 +80,7 @@ namespace DungeonExplorer
         // Returns a comma-separated string of all inventory items
         public string InventoryContents()
         {
-            return string.Join(", ", inventory);
+            return string.Join(", ", inventory.Select(i => i.Name));
         }
     }
 }
