@@ -12,11 +12,16 @@ namespace DungeonExplorer
         {
             try
             {
-                // Display welcome message
-                Console.WriteLine("===================================");
+                // Check if we're running tests
+                if (args.Length > 0 && args[0].ToLower() == "test")
+                {
+                    Testing.RunTests();
+                    return;
+                }
+
                 Console.WriteLine("Welcome to DUNGEON EXPLORER");
                 Console.WriteLine("===================================");
-                Console.WriteLine("A text-based adventure game");
+                Console.WriteLine("This is a text-based adventure game");
                 Console.WriteLine();
 
                 // Create and start the game
